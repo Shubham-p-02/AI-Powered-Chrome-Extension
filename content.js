@@ -14,7 +14,6 @@ function onProblemsPage(){
 }
 
 function addBookmarkButton() {
-    console.log("Trigerring");
     if(!onProblemsPage() || document.getElementById("add-bookmark-button")) return;
 
     const bookmarkButton = document.createElement('img');
@@ -22,10 +21,12 @@ function addBookmarkButton() {
     bookmarkButton.src = bookmarkImgURL;
     bookmarkButton.style.height = "30px";
     bookmarkButton.style.width = "30px";
+    bookmarkButton.style.cursor = "pointer";
 
-    const askDoubtButton = document.getElementsByClassName("coding_ask_doubt_button__FjwXJ")[0];
+    const insertTarget = getInsertTarget();
+    if(!insertTarget) return;
 
-    askDoubtButton.parentNode.insertAdjacentElement("afterend", bookmarkButton);
+    insertTarget.insertAdjacentElement("afterend", bookmarkButton);
 
     bookmarkButton.addEventListener("click", addNewBookmarkHandler);
 }
@@ -35,7 +36,9 @@ async function addNewBookmarkHandler() {
 
     const azProblemUrl = window.location.href;
     const uniqueId = extractUniqueId(azProblemUrl);
-    const problemName = document.getElementsByClassName("Header_resource_heading__cpRp1")[0].innerText;
+    const problemName = getProblemName();
+
+    if(!uniqueId) return;
 
     if(currentBookmarks.some((bookmark) => bookmark.id === uniqueId)) return;
 
@@ -54,7 +57,8 @@ async function addNewBookmarkHandler() {
 function extractUniqueId(url) {
     const start = url.indexOf("problems/") + "problems/".length;
     const end = url.indexOf("?", start);
-    return end === -1 ? url.substring(start) : url.substring(start, end);
+    const extractedId = end === -1 ? url.substring(start) : url.substring(start, end);
+    return extractedId.replace(/\/+$/, "");
 }
 
 function getCurrentBookmarks() {
@@ -63,4 +67,25 @@ function getCurrentBookmarks() {
             resolve(results[AZ_PROBLEM_KEY] || []);
         });
     });
+}
+
+function getInsertTarget() {
+    const classBasedTarget = document.getElementsByClassName("coding_ask_doubt_button__FjwXJ")[0];
+    if(classBasedTarget?.parentNode) return classBasedTarget.parentNode;
+
+    const actionButton = [...document.querySelectorAll("button, a")]
+        .find((item) => /doubt|hint|discussion/i.test(item.textContent || ""));
+    if(actionButton?.parentNode) return actionButton.parentNode;
+
+    return null;
+}
+
+function getProblemName() {
+    const classBasedTitle = document.getElementsByClassName("Header_resource_heading__cpRp1")[0];
+    if(classBasedTitle?.innerText?.trim()) return classBasedTitle.innerText.trim();
+
+    const heading = document.querySelector("h1");
+    if(heading?.textContent?.trim()) return heading.textContent.trim();
+
+    return document.title || "AZ Problem";
 }
